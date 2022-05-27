@@ -6,10 +6,21 @@ import { _getProvider, _getSigner, _requestAccount } from '../utils/utils.js';
 import Game from './artifacts/contracts/Game.sol/Game.json';
 
 export default function Home() {
-  const [paths, setPaths] = useState([])
+  const [player, setPlayer] = useState(null);
+  const [paths, setPaths] = useState([]);
+
   useEffect(() => {
     const init = async () => {
-      await loadPathHistory();
+      try {
+        const player = await _requestAccount();
+        setPlayer(player);
+
+        if (player) {
+          await loadPathHistory();
+        }
+      } catch (error) {
+        console.log(error);
+      }
     };
     init();
   }, []);
@@ -21,8 +32,8 @@ export default function Home() {
     const data = await gameContract.fetchPathHistory(player);
     
     const items = await Promise.all(data.map(async i => {
-      let pathData = await gameContract.getPathDataFromType(i.pathType);
-      let item = {
+      const pathData = await gameContract.getPathDataFromType(i.pathType);
+      const item = {
         pathName: pathData.pathName,
         gold: i.gold.toNumber(),
         key: i.key,
@@ -34,6 +45,7 @@ export default function Home() {
     setPaths(items);
   }
 
+  if (!player) return ( <h1 className="p-20 text-4xl text-gray-300">Connect with Metamask to play this game.</h1> );
   if (!paths.length) return ( <h1 className="p-20 text-4xl text-gray-300">No game history! Go start your first game.</h1> );
   return (
     <section className="bg-gray-800 px-auto w-full py-12">

@@ -1,6 +1,6 @@
-import { ethers } from 'ethers'
-import { useEffect, useState } from 'react'
-import axios from 'axios'
+import { ethers } from 'ethers';
+import { useEffect, useState } from 'react';
+import axios from 'axios';
 
 import { _getProvider, _getSigner, _requestAccount } from '../utils/utils.js';
 import { _inGame, _isDead, _getGold, _getKey, _getTreasure } from '../utils/gameutils.js';
@@ -9,8 +9,9 @@ import GameItems from './artifacts/contracts/GameItems.sol/GameItems.json';
 import Game from './artifacts/contracts/Game.sol/Game.json';
 
 export default function Home() {
-  const [currentPath, setCurrentPath ] = useState([]);
-  const [nextPaths, setNextPaths ] = useState([]);
+  const [player, setPlayer] = useState(undefined);
+  const [currentPath, setCurrentPath] = useState([]);
+  const [nextPaths, setNextPaths] = useState([]);
   const [inGame, setInGame] = useState(undefined);
   const [isDead, setIsDead] = useState(undefined);
   const [gold, setGold] = useState(0);
@@ -22,25 +23,37 @@ export default function Home() {
 
   useEffect(() => {
     const init = async () => {
-      await checkInGameAndLoad();
-      await loadGameItems();
+      try {
+        const player = await _requestAccount();
+        setPlayer(player);
+
+        if (player) {
+          await checkInGameAndLoad();
+          await loadGameItems();
+        }
+      } catch (error) {
+        console.log(error);
+      }
     };
     init();
   }, []);
 
+  
   async function loadGameImage(contract, tokenId, setImage) {
-    let ipfsProviderUrl = 'https://ipfs.io/ipfs/'
-    let itemUri = await contract.uri(tokenId);
-    let itemUrl = itemUri.replace('ipfs://', ipfsProviderUrl).replace('{id}', '' + tokenId);
-    let itemData = await axios.get(itemUrl);
-    let itemMeta = itemData.data;
+    const ipfsProviderUrl = 'https://dweb.link/ipfs/'
+    const itemUri = await contract.uri(tokenId);
+    const itemUrl = itemUri.replace('ipfs://', ipfsProviderUrl).replace('{id}', '' + tokenId);
+    const itemData = await axios.get(itemUrl);
 
-    setImage(itemMeta.image.replace('ipfs://', ipfsProviderUrl));
+    const img = new Image();
+    img.src = itemData.data.image.replace('ipfs://', ipfsProviderUrl);
+
+    setImage(img.src);
   }
 
   async function loadGameItems() {
-    const signer = await _getSigner();
-    const gameItemsContract = new ethers.Contract(process.env.NEXT_PUBLIC_GAME_ITEMS_ADDR, GameItems.abi, signer);
+    const provider = await _getProvider();
+    const gameItemsContract = new ethers.Contract(process.env.NEXT_PUBLIC_GAME_ITEMS_ADDR, GameItems.abi, provider);
 
     await loadGameImage(gameItemsContract, 0, setGoldImage);
     await loadGameImage(gameItemsContract, 1, setKeyImage);
@@ -67,7 +80,7 @@ export default function Home() {
   async function startGame() {
     const signer = await _getSigner();
     const gameContract = new ethers.Contract(process.env.NEXT_PUBLIC_GAME_ADDR, Game.abi, signer);
-    let pathTx = await gameContract.startGame();
+    const pathTx = await gameContract.startGame();
     await pathTx.wait();
     await checkInGameAndLoad();
   }
@@ -75,9 +88,8 @@ export default function Home() {
   async function choosePath(choice) {
     const signer = await _getSigner();
     const gameContract = new ethers.Contract(process.env.NEXT_PUBLIC_GAME_ADDR, Game.abi, signer);
-    let pathTx = await gameContract.choosePath(choice);
-    let tx = await pathTx.wait();
-    // let event = tx.events[0];
+    const pathTx = await gameContract.choosePath(choice);
+    await pathTx.wait();
     await checkInGameAndLoad();
   }
 
@@ -85,23 +97,23 @@ export default function Home() {
     const provider = await _getProvider();
     const gameContract = new ethers.Contract(process.env.NEXT_PUBLIC_GAME_ADDR, Game.abi, provider);
     const player = await _requestAccount();
-    let pathData = await gameContract.fetchCurrentPath(player);
+    const pathData = await gameContract.fetchCurrentPath(player);
 
     await setAllPathData(pathData, gameContract);
   }
 
   async function setAllPathData(pathData, gameContract) {
-    let currentPath = {
+    const currentPath = {
       pathName: pathData.pathName,
       pathDescription: pathData.pathDescription,
       deathDescription: pathData.deathDescription
     };
     setCurrentPath(currentPath);
 
-    let nextPathTypes = pathData.nextPathTypes;
+    const nextPathTypes = pathData.nextPathTypes;
     const nextPaths = await Promise.all(nextPathTypes.map(async pathType => {
-      let name = await gameContract.getPathNameFromType(pathType);
-      let path = {
+      const name = await gameContract.getPathNameFromType(pathType);
+      const path = {
         pathName: name,
       };
       return path;
@@ -109,6 +121,7 @@ export default function Home() {
     setNextPaths(nextPaths);
   }
 
+  if (!player) return ( <h1 className="p-20 text-4xl text-gray-300">Connect with Metamask to play this game.</h1> );
   if (isDead) return (
     <section className="bg-gray-800 container mx-auto flex flex-wrap items-center">
       <div className="flex-wrap w-full pt-2 content-center">

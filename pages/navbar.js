@@ -1,9 +1,29 @@
 import MenuItems from "../utils/menuitems.js";
 import Link from "next/link";
 import { useRouter } from "next/router";
+import { useEffect, useState } from 'react';
+import { _requestAccount } from "../utils/utils.js";
 
 export const Navbar = () => {
   const router = useRouter();
+
+  const [player, setPlayer] = useState(null);
+
+  useEffect(() => {
+    const init = async () => {
+        await connectWallet();
+    };
+    init();
+  }, []);
+
+  async function connectWallet() {
+    try {
+        const player = await _requestAccount();
+        setPlayer(player);
+    } catch (error) {
+      console.log(error);
+    }
+  }
 
   return (
     <nav className="bg-gray-800 p-2 mt-0 sticky fixed w-full z-10 top-0">
@@ -32,6 +52,9 @@ export const Navbar = () => {
                         );
                     })}
                 </ul>
+                <button onClick={connectWallet} className="p-4 font-extrabold text-gray-300 justify-center bg-gradient-to-tr from-gray-900 to-green-900 hover:from-gray-900 hover:to-green-800 rounded-md shadow-lg shadow-indigo-500/40 hover:shadow-none">
+                    {player ? <span>{player.slice(-4)}</span> : <span>Connect Wallet</span>}
+                </button>
             </div>
         </div>
     </nav>
