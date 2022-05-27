@@ -2,7 +2,6 @@ import { ethers } from 'ethers'
 import { useEffect, useState } from 'react'
 
 import { _getProvider, _getSigner, _requestAccount } from '../utils/utils.js';
-import { gameaddress } from '../config'
 
 import Game from '../artifacts/contracts/Game.sol/Game.json';
 
@@ -17,7 +16,7 @@ export default function Home() {
 
   async function loadPathHistory() {
     const provider = await _getProvider();
-    const gameContract = new ethers.Contract(gameaddress, Game.abi, provider);
+    const gameContract = new ethers.Contract(process.env.NEXT_PUBLIC_GAME_ADDR, Game.abi, provider);
     const player = await _requestAccount();
     const data = await gameContract.fetchPathHistory(player);
     

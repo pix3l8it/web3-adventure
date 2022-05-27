@@ -4,7 +4,6 @@ import axios from 'axios'
 
 import { _getProvider, _getSigner, _requestAccount } from '../utils/utils.js';
 import { _inGame, _isDead, _getGold, _getKey, _getTreasure } from '../utils/gameutils.js';
-import { gameitemsaddress, gameaddress } from '../config';
 
 import GameItems from '../artifacts/contracts/GameItems.sol/GameItems.json';
 import Game from '../artifacts/contracts/Game.sol/Game.json';
@@ -41,7 +40,7 @@ export default function Home() {
 
   async function loadGameItems() {
     const signer = await _getSigner();
-    const gameItemsContract = new ethers.Contract(gameitemsaddress, GameItems.abi, signer);
+    const gameItemsContract = new ethers.Contract(process.env.NEXT_PUBLIC_GAME_ITEMS_ADDR, GameItems.abi, signer);
 
     await loadGameImage(gameItemsContract, 0, setGoldImage);
     await loadGameImage(gameItemsContract, 1, setKeyImage);
@@ -67,7 +66,7 @@ export default function Home() {
 
   async function startGame() {
     const signer = await _getSigner();
-    const gameContract = new ethers.Contract(gameaddress, Game.abi, signer);
+    const gameContract = new ethers.Contract(process.env.NEXT_PUBLIC_GAME_ADDR, Game.abi, signer);
     let pathTx = await gameContract.startGame();
     await pathTx.wait();
     await checkInGameAndLoad();
@@ -75,7 +74,7 @@ export default function Home() {
 
   async function choosePath(choice) {
     const signer = await _getSigner();
-    const gameContract = new ethers.Contract(gameaddress, Game.abi, signer);
+    const gameContract = new ethers.Contract(process.env.NEXT_PUBLIC_GAME_ADDR, Game.abi, signer);
     let pathTx = await gameContract.choosePath(choice);
     let tx = await pathTx.wait();
     // let event = tx.events[0];
@@ -84,7 +83,7 @@ export default function Home() {
 
   async function loadGameData() {
     const provider = await _getProvider();
-    const gameContract = new ethers.Contract(gameaddress, Game.abi, provider);
+    const gameContract = new ethers.Contract(process.env.NEXT_PUBLIC_GAME_ADDR, Game.abi, provider);
     const player = await _requestAccount();
     let pathData = await gameContract.fetchCurrentPath(player);
 
