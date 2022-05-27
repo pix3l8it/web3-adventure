@@ -35,16 +35,6 @@ contract Game is ReentrancyGuard, GameData, ERC1155Holder {
     mapping(address => PathData) private playerCurrentPaths;
     mapping(address => GameState) private playerStates;
 
-    event PathCreated (
-        uint256 indexed pathId,
-        PathType indexed pathType,
-        uint256 gold,
-        address player,
-        bool key,
-        bool treasure,
-        bool death
-    );
-
     constructor(address _gameItemsAddress, address _owner) {
         gameItemsAddress = _gameItemsAddress;
         owner = _owner;
@@ -90,6 +80,10 @@ contract Game is ReentrancyGuard, GameData, ERC1155Holder {
             _itemAmounts[1] = key ? 1 : 0;
             _itemAmounts[2] = treasure ? 1 : 0;
             gameItems.safeBatchTransferFrom(address(this), msg.sender, _itemIds, _itemAmounts, "0x0");
+
+            if (pathType == PathType.PALACE) {
+                playerStates[msg.sender] = GameState.WON;
+            }
         }
 
         playerCurrentPaths[msg.sender] = _pathData;
@@ -103,31 +97,10 @@ contract Game is ReentrancyGuard, GameData, ERC1155Holder {
             treasure,
             death
         );
-
-        emit PathCreated(
-            pathId,
-            pathType,
-            gold,
-            msg.sender,
-            key,
-            treasure,
-            death
-        );
     }
 
     function fetchCurrentPath(address player) public view returns (PathData memory) {
         return playerCurrentPaths[player];
-    }
-
-    function fetchNextPathChoice(address player) public view returns (PathData[] memory) {
-        PathType[PATHS_TO_CHOOSE] memory playerPathTypes = playerCurrentPaths[player].nextPathTypes;
-        PathData[] memory playerPathData = new PathData[](PATHS_TO_CHOOSE);
-
-        for (uint i = 0; i < PATHS_TO_CHOOSE; i++) {
-            PathData memory currentPathData = getPathDataFromType(playerPathTypes[i]);
-            playerPathData[i] = currentPathData;
-        }
-        return playerPathData;
     }
 
     function fetchPathHistory(address player) public view returns (Path[] memory) {
