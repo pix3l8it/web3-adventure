@@ -1,4 +1,4 @@
-import MenuItems from "../utils/menuitems.js";
+import MenuItems from "./utils/menuitems.js";
 import Link from "next/link";
 import { useRouter } from "next/router";
 

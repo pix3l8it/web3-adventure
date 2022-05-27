@@ -45,6 +45,6 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
   },
   paths: {
     sources: "./contracts",
-    artifacts: './artifacts'
+    artifacts: './pages/artifacts'
   }
 };

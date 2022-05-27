@@ -1,9 +1,9 @@
 import { ethers } from 'ethers'
 import { useEffect, useState } from 'react'
 
-import { _getProvider, _getSigner, _requestAccount } from '../utils/utils.js';
+import { _getProvider, _getSigner, _requestAccount } from './utils/utils.js';
 
-import Game from '../artifacts/contracts/Game.sol/Game.json';
+import Game from './artifacts/contracts/Game.sol/Game.json';
 
 export default function Home() {
   const [paths, setPaths] = useState([])

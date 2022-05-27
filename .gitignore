@@ -6,7 +6,8 @@ typechain
 
 #Hardhat files
 cache
-artifacts
+pages/artifacts/@openzeppelin
+pages/artifacts/build-info
 
 # Local Next folder
 .next

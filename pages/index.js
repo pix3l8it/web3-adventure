@@ -2,11 +2,11 @@ import { ethers } from 'ethers'
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 
-import { _getProvider, _getSigner, _requestAccount } from '../utils/utils.js';
-import { _inGame, _isDead, _getGold, _getKey, _getTreasure } from '../utils/gameutils.js';
+import { _getProvider, _getSigner, _requestAccount } from './utils/utils.js';
+import { _inGame, _isDead, _getGold, _getKey, _getTreasure } from './utils/gameutils.js';
 
-import GameItems from '../artifacts/contracts/GameItems.sol/GameItems.json';
-import Game from '../artifacts/contracts/Game.sol/Game.json';
+import GameItems from './artifacts/contracts/GameItems.sol/GameItems.json';
+import Game from './artifacts/contracts/Game.sol/Game.json';
 
 export default function Home() {
   const [currentPath, setCurrentPath ] = useState([]);
