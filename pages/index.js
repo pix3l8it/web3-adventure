@@ -2,8 +2,8 @@ import { ethers } from 'ethers'
 import { useEffect, useState } from 'react'
 import axios from 'axios'
 
-import { _getProvider, _getSigner, _requestAccount } from './utils/utils.js';
-import { _inGame, _isDead, _getGold, _getKey, _getTreasure } from './utils/gameutils.js';
+import { _getProvider, _getSigner, _requestAccount } from '../utils/utils.js';
+import { _inGame, _isDead, _getGold, _getKey, _getTreasure } from '../utils/gameutils.js';
 
 import GameItems from './artifacts/contracts/GameItems.sol/GameItems.json';
 import Game from './artifacts/contracts/Game.sol/Game.json';
@@ -116,7 +116,7 @@ export default function Home() {
         <div className="py-10 justify-left text-lg text-gray-300 font-medium">{currentPath.deathDescription}</div>
         <div className="pb-10 justify-left text-lg text-gray-300 font-extrabold text-red-600">Game over!</div>
         <button type="button" onClick={startGame} className="p-4 font-extrabold text-gray-300 justify-center bg-gradient-to-tr from-gray-900 to-green-900 hover:from-gray-900 hover:to-green-800 rounded-md shadow-lg shadow-indigo-500/40 hover:shadow-none">
-          > Restart Game
+          {'>'} Restart Game
         </button>
       </div>
     </section>
@@ -126,7 +126,7 @@ export default function Home() {
       <div className="flex-wrap w-full pt-2 content-center">
         <div className="p-10 flex justify-center text-2xl text-gray-300 font-extrabold">Start a Game!</div>
         <button type="button" onClick={startGame} className="p-4 font-extrabold text-gray-300 justify-center bg-gradient-to-tr from-gray-900 to-green-900 hover:from-gray-900 hover:to-green-800 rounded-md shadow-lg shadow-indigo-500/40 hover:shadow-none">
-          > Start Game
+          {'>'} Start Game
         </button>
       </div>
     </section>
@@ -157,7 +157,7 @@ export default function Home() {
               <button type="button" onClick={async () => {await choosePath(i);}} key={i} className="bg-gradient-to-tr from-gray-900 to-green-900 hover:from-gray-900 hover:to-green-800 rounded-md shadow-lg shadow-indigo-500/40 hover:shadow-none">
                 <div className="max-w-xs h-full text-white hover:text-black">
                   <div className="p-5 text-left">
-                    <p className="text-lg text-gray-300 font-bold">> {path.pathName}</p>
+                    <p className="text-lg text-gray-300 font-bold">{'>'} {path.pathName}</p>
                   </div>
                 </div>
               </button>

@@ -2,10 +2,9 @@ import { ethers } from 'ethers'
 
 import { _requestAccount } from './utils.js';
 
-import Game from '../artifacts/contracts/Game.sol/Game.json';
+import Game from '../pages/artifacts/contracts/Game.sol/Game.json';
 
 const _inGame = async provider => {
-    console.log(process.env.NEXT_PUBLIC_GAME_ADDR);
     const gameContract = new ethers.Contract(process.env.NEXT_PUBLIC_GAME_ADDR, Game.abi, provider);
     const player = await _requestAccount();
     const inGame = await gameContract.isInGame(player);
