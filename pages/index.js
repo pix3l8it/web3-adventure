@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import axios from 'axios';
 
 import { _getProvider, _getSigner, _requestAccount } from '../utils/utils.js';
-import { _inGame, _isDead, _getGold, _getKey, _getTreasure } from '../utils/gameutils.js';
+import { _loadPathDescriptors, _inGame, _isDead, _hasWon, _getGold, _getKey, _getTreasure } from '../utils/gameutils.js';
 
 import GameItems from './artifacts/contracts/GameItems.sol/GameItems.json';
 import Game from './artifacts/contracts/Game.sol/Game.json';
@@ -14,6 +14,7 @@ export default function Home() {
   const [nextPaths, setNextPaths] = useState([]);
   const [inGame, setInGame] = useState(undefined);
   const [isDead, setIsDead] = useState(undefined);
+  const [hasWon, setHasWon] = useState(undefined);
   const [gold, setGold] = useState(0);
   const [key, setKey] = useState(0);
   const [treasure, setTreasure] = useState(0);
@@ -37,16 +38,15 @@ export default function Home() {
     };
     init();
   }, []);
-
   
   async function loadGameImage(contract, tokenId, setImage) {
-    const ipfsProviderUrl = 'https://dweb.link/ipfs/'
+    const ipfsProvider = '.ipfs.nftstorage.link'
     const itemUri = await contract.uri(tokenId);
-    const itemUrl = itemUri.replace('ipfs://', ipfsProviderUrl).replace('{id}', '' + tokenId);
+    const itemUrl = itemUri.replace(/ipfs:\/\/([a-zA-Z0-9]*)\//, 'https://$1' + ipfsProvider + '/').replace('{id}', '' + tokenId);
     const itemData = await axios.get(itemUrl);
 
     const img = new Image();
-    img.src = itemData.data.image.replace('ipfs://', ipfsProviderUrl);
+    img.src = itemData.data.image.replace(/ipfs:\/\/([a-zA-Z0-9]*)\//, 'https://$1' + ipfsProvider + '/');
 
     setImage(img.src);
   }
@@ -64,15 +64,17 @@ export default function Home() {
     const provider = await _getProvider();
     const inGame = await _inGame(provider);
     const isDead = await _isDead(provider);
+    const hasWon = await _hasWon(provider);
     const gold = await _getGold(provider);
     const key = await _getKey(provider);
     const treasure = await _getTreasure(provider);
     setInGame(inGame);
     setIsDead(isDead);
+    setHasWon(hasWon);
     setGold(gold);
     setKey(key);
     setTreasure(treasure);
-    if (inGame || isDead) {
+    if (inGame || isDead || hasWon) {
       await loadGameData();
     }
   }
@@ -103,47 +105,18 @@ export default function Home() {
   }
 
   async function setAllPathData(pathData, gameContract) {
-    const currentPath = {
-      pathName: pathData.pathName,
-      pathDescription: pathData.pathDescription,
-      deathDescription: pathData.deathDescription
-    };
+    const currentPath = await _loadPathDescriptors(gameContract, pathData.pathType);
     setCurrentPath(currentPath);
 
     const nextPathTypes = pathData.nextPathTypes;
     const nextPaths = await Promise.all(nextPathTypes.map(async pathType => {
-      const name = await gameContract.getPathNameFromType(pathType);
-      const path = {
-        pathName: name,
-      };
+      const path = await _loadPathDescriptors(gameContract, pathType);
       return path;
     }));
     setNextPaths(nextPaths);
   }
 
   if (!player) return ( <h1 className="p-20 text-4xl text-gray-300">Connect with Metamask to play this game.</h1> );
-  if (isDead) return (
-    <section className="bg-gray-800 container mx-auto flex flex-wrap items-center">
-      <div className="flex-wrap w-full pt-2 content-center">
-        <div className="pt-10 justify-left text-2xl text-gray-300 font-extrabold">{currentPath.pathName}</div>
-        <div className="py-10 justify-left text-lg text-gray-300 font-medium">{currentPath.deathDescription}</div>
-        <div className="pb-10 justify-left text-lg text-gray-300 font-extrabold text-red-600">Game over!</div>
-        <button type="button" onClick={startGame} className="p-4 font-extrabold text-gray-300 justify-center bg-gradient-to-tr from-gray-900 to-green-900 hover:from-gray-900 hover:to-green-800 rounded-md shadow-lg shadow-indigo-500/40 hover:shadow-none">
-          {'>'} Restart Game
-        </button>
-      </div>
-    </section>
-  );
-  if (!inGame && !currentPath.length && !nextPaths.length) return (
-    <section className="bg-gray-800 container mx-auto flex flex-wrap items-center">
-      <div className="flex-wrap w-full pt-2 content-center">
-        <div className="p-10 flex justify-center text-2xl text-gray-300 font-extrabold">Start a Game!</div>
-        <button type="button" onClick={startGame} className="p-4 font-extrabold text-gray-300 justify-center bg-gradient-to-tr from-gray-900 to-green-900 hover:from-gray-900 hover:to-green-800 rounded-md shadow-lg shadow-indigo-500/40 hover:shadow-none">
-          {'>'} Start Game
-        </button>
-      </div>
-    </section>
-  );
   return (
     <section className="bg-gray-800 container mx-auto flex flex-wrap items-center">
       <div className="p-10 font-bold sm:grid md:grid-cols-3 xl:grid-cols-3 3xl:flex flex-wrap w-full content-center">
@@ -160,24 +133,50 @@ export default function Home() {
           <p className="ml-2">Treasure: {treasure}</p>
         </div>
       </div>
-      <div className="px-10 py-6 text-lg text-gray-300">{currentPath.pathDescription}</div>
-      <div className="px-10 pb-16 w-full text-lg text-gray-300">Current path: <span className="font-extrabold">{currentPath.pathName}</span></div>
-      <div className="px-10 pb-4 w-full text-lg text-gray-300">Here are the adjacent paths:</div>
-      <div className="mx-10 w-full flex flex-col">
-        <div className="flex flex-col items-center justify-center md:flex-row">
-          <div className="px-5 my-6 gap-4 sm:grid md:grid-cols-3 xl:grid-cols-3 3xl:flex flex-wrap justify-center">
-            {nextPaths.map((path, i) => (
-              <button type="button" onClick={async () => {await choosePath(i);}} key={i} className="bg-gradient-to-tr from-gray-900 to-green-900 hover:from-gray-900 hover:to-green-800 rounded-md shadow-lg shadow-indigo-500/40 hover:shadow-none">
-                <div className="max-w-xs h-full text-white hover:text-black">
-                  <div className="p-5 text-left">
-                    <p className="text-lg text-gray-300 font-bold">{'>'} {path.pathName}</p>
-                  </div>
-                </div>
-              </button>
-            ))}
+      { !inGame && !currentPath.length && !nextPaths.length ?
+      <div className="pt-2 w-full grid grid-cols-1 place-items-center">
+        <div className="p-10 text-2xl text-gray-300 font-extrabold">Start a Game!</div>
+        <button type="button" onClick={startGame} className="p-4 font-extrabold text-gray-300 bg-gradient-to-tr from-gray-900 to-green-900 hover:from-gray-900 hover:to-green-800 rounded-md shadow-lg shadow-indigo-500/40 hover:shadow-none">
+          {'>'} Start Game
+        </button>
+      </div>
+      :
+      <div className="flex-wrap w-full pt-2 px-10 content-center">
+        { !isDead ?
+          <div className="py-6 text-lg text-gray-300">{currentPath.pathDescription}</div>
+          :
+          <div className="py-10 justify-left text-lg text-gray-300 font-medium">{currentPath.deathDescription}</div>
+        }
+        <div className="pb-16 w-full text-lg text-gray-300">Current path: <span className="font-extrabold">{currentPath.pathName}</span></div>
+        
+        { isDead ? <div className="pb-10 justify-left text-lg text-gray-300 font-extrabold text-red-600">Game over!</div> : <div></div> }
+        { hasWon ? <div className="pb-10 justify-left text-lg text-gray-300 font-extrabold text-purple-600">You won!</div> : <div></div> }
+        { isDead || hasWon ?
+        <button type="button" onClick={startGame} className="p-4 font-extrabold text-gray-300 justify-center bg-gradient-to-tr from-gray-900 to-green-900 hover:from-gray-900 hover:to-green-800 rounded-md shadow-lg shadow-indigo-500/40 hover:shadow-none">
+          {'>'} Restart Game
+        </button>
+        :
+        <div>
+          <div className="pb-4 w-full text-lg text-gray-300">Here are the adjacent paths:</div>
+          <div className="w-full flex flex-col">
+            <div className="flex flex-col items-center justify-center md:flex-row">
+              <div className="px-5 my-6 gap-4 sm:grid md:grid-cols-3 xl:grid-cols-3 3xl:flex flex-wrap justify-center">
+                {nextPaths.map((path, i) => (
+                  <button type="button" onClick={async () => {await choosePath(i);}} key={i} className="bg-gradient-to-tr from-gray-900 to-green-900 hover:from-gray-900 hover:to-green-800 rounded-md shadow-lg shadow-indigo-500/40 hover:shadow-none">
+                    <div className="max-w-xs h-full text-white hover:text-black">
+                      <div className="p-5 text-left">
+                        <p className="text-lg text-gray-300 font-bold">{'>'} {path.pathName}</p>
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
         </div>
+        }
       </div>
+      }
     </section>
   );
 };

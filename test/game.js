@@ -1,7 +1,22 @@
 const { expect, assert } = require("chai");
 const { ethers } = require("hardhat");
-// const { expectRevert } = require('@openzeppelin/test-helpers');
 const { getContractAddress } = require("@ethersproject/address");
+
+// Game paths
+const CHASM = 0;
+const FRAGILE_CAVE = 1;
+const BROKEN_TRACK = 2;
+const MINE_TUNNEL = 3;
+const NARROW_CAVE = 4;
+const SMELL_OF_FIRE = 5;
+const OLD_LADDER = 6;
+const OLD_CORRIDOR = 7;
+const MUSKY_SMELL = 8
+const LOOSE_PLANKS = 9;
+const FRIENDLY_RAT = 10;
+const MURMURING = 11;
+const DESERT = 12;
+const PALACE = 13;
 
 describe("Game", function () {
   let Game;
@@ -82,21 +97,69 @@ describe("Game", function () {
       expect(isInGame && !isInGame2 && !isInGame3 && isInGame4).to.equal(true);
     });
 
-    it("Should start game with default initial paths", async function () {
+    it("Should start game with default initial path", async function () {
       await game.connect(account3).startGame();
-      const pathData = await game.fetchNextPathChoice(account3.address);
-      expect(pathData[0].pathType).to.equal(0);
-      expect(pathData[1].pathType).to.equal(1);
-      expect(pathData[2].pathType).to.equal(2);
+      const pathData = await game.fetchCurrentPath(account3.address);
+      const initialPath = await game.getInitialPath();
+      expect(pathData.pathType).to.equal(initialPath.pathType);
     });
   });
 
   describe("Gameplay", function () {
     it("Player should receive gold while playing", async function () {
       await game.connect(account2).startGame();
-      await game.connect(account2).choosePath(1);
+      await game.connect(account2).choosePath(2); // Cannot die in MINE_TUNNEL
       const gold = await game.getBalanceOfGold(account2.address);
       assert.isAbove(gold, 0, "Gold > 0");
+    });
+
+    it("Player can get accurate path history", async function () {
+      await game.connect(account2).startGame();
+      await game.connect(account2).choosePath(2);
+      await game.connect(account2).choosePath(0);
+      await game.connect(account2).choosePath(2);
+
+      const pathHistory = await game.fetchPathHistory(account2.address);
+      expect(pathHistory[0].pathType).to.equal(MINE_TUNNEL);
+      expect(pathHistory[1].pathType).to.equal(OLD_CORRIDOR);
+      expect(pathHistory[2].pathType).to.equal(MURMURING);
+    });
+
+    it ("Player can die", async function () {
+      let hasDied = false;
+      let safeCounter = 100;
+      while (!hasDied && safeCounter > 0) {
+        let inGame = await game.isInGame(account3.address);
+        if (!inGame) {
+          await game.connect(account3).startGame();
+        }
+        else {
+          await game.connect(account3).choosePath(0);
+          hasDied = await game.isDead(account3.address);
+        }
+        safeCounter--;
+      }
+      assert.isTrue(hasDied);
+    });
+
+    it ("Player can win", async function () {
+      let hasWon = false;
+      let bestPath = [1,0,2]; // Fastest path to PALACE
+      let safeCounter = 100;
+      while (!hasWon && safeCounter > 0) {
+        let hasDied = false;
+        await game.connect(account3).startGame();
+
+        for (let i = 0; i < bestPath.length; i++) {
+          await game.connect(account3).choosePath(bestPath[i]);
+          hasWon = await game.hasWon(account3.address);
+          hasDied = await game.isDead(account3.address);
+
+          if (hasWon || hasDied) break;
+        }
+        safeCounter--;
+      }
+      assert.isTrue(hasWon);
     });
   });
 });

@@ -2,6 +2,7 @@ import { ethers } from 'ethers'
 import { useEffect, useState } from 'react'
 
 import { _getProvider, _getSigner, _requestAccount } from '../utils/utils.js';
+import { _loadPathDescriptors } from '../utils/gameutils.js';
 
 import Game from './artifacts/contracts/Game.sol/Game.json';
 
@@ -32,9 +33,9 @@ export default function Home() {
     const data = await gameContract.fetchPathHistory(player);
     
     const items = await Promise.all(data.map(async i => {
-      const pathData = await gameContract.getPathDataFromType(i.pathType);
+      const pathDescriptors = await _loadPathDescriptors(gameContract, i.pathType);
       const item = {
-        pathName: pathData.pathName,
+        pathName: pathDescriptors.pathName,
         gold: i.gold.toNumber(),
         key: i.key,
         treasure: i.treasure,
@@ -61,7 +62,8 @@ export default function Home() {
                       {path.gold ? <span className="block">Received <span className="font-bold text-yellow-400">{path.gold}</span> gold!</span> : ''}
                       {path.key ? <span className="block">Received <span className="font-bold text-green-600">key</span></span> : ''}
                       {path.treasure ? <span className="block">Received <span className="font-bold text-blue-400">treasure</span></span> : ''}
-                      {path.death ? <span className="font-bold text-red-600">You died!</span> : ''}
+                      {path.death ? <span className="block font-bold text-red-600">You died!</span> : ''}
+                      {path.pathName == "Palace" ? <span className="font-bold text-purple-600">You won!</span> : ''}
                     </p>
                   </div>
                 </div>

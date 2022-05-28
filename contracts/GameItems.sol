@@ -11,7 +11,7 @@ contract GameItems is ERC1155, ERC1155Supply {
 
     address public gameAddress;
 
-    constructor(address _gameAddress) ERC1155("ipfs://QmdnMPxF8k5CwfT9xAYPY7Yp1trECcnka9qHseMqrBA7PC/{id}.json") {
+    constructor(address _gameAddress) ERC1155("ipfs://bafybeigrsadirdhydy6sqo4aintqy2uyhp5rqrteoyjfnmvhadc3yjdbxe/{id}.json") {
         gameAddress = _gameAddress;
 
         _mint(gameAddress, GOLD, 10**18, "");

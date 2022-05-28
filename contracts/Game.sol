@@ -135,6 +135,10 @@ contract Game is ReentrancyGuard, GameData, ERC1155Holder {
         return playerStates[player] == GameState.DIED;
     }
 
+    function hasWon(address player) public view returns(bool _hasWon) {
+        return playerStates[player] == GameState.WON;
+    }
+
     function getBalanceOfGold(address player) public view returns(uint256 gold) {
         uint256 data = gameItems.balanceOf(player, gameItems.GOLD());
         return data;
