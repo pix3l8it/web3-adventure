@@ -14,7 +14,8 @@ const _loadPathDescriptors = async (contract, pathType) => {
     const currentPath = {
         pathName: itemData.data.pathName,
         pathDescription: itemData.data.pathDescription,
-        deathDescription: itemData.data.deathDescription
+        deathDescription: itemData.data.deathDescription,
+        image: itemData.data.image
     };
     return currentPath;
 };

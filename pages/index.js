@@ -11,6 +11,7 @@ import Game from './artifacts/contracts/Game.sol/Game.json';
 export default function Home() {
   const [player, setPlayer] = useState(undefined);
   const [currentPath, setCurrentPath] = useState([]);
+  const [currentPathImage, setCurrentPathImage] = useState(null);
   const [nextPaths, setNextPaths] = useState([]);
   const [inGame, setInGame] = useState(undefined);
   const [isDead, setIsDead] = useState(undefined);
@@ -23,6 +24,7 @@ export default function Home() {
   const [treasureImage, setTreasureImage] = useState(null);
 
   useEffect(() => {
+    window.scrollTo(0, 0);
     const init = async () => {
       try {
         const player = await _requestAccount();
@@ -38,15 +40,20 @@ export default function Home() {
     };
     init();
   }, []);
+
+  function changeIpfsUrl(itemUri) {
+    const ipfsProvider = '.ipfs.nftstorage.link';
+    const itemUrl = itemUri.replace(/ipfs:\/\/([a-zA-Z0-9]*)\//, 'https://$1' + ipfsProvider + '/');
+    return itemUrl;
+  }
   
   async function loadGameImage(contract, tokenId, setImage) {
-    const ipfsProvider = '.ipfs.nftstorage.link'
     const itemUri = await contract.uri(tokenId);
-    const itemUrl = itemUri.replace(/ipfs:\/\/([a-zA-Z0-9]*)\//, 'https://$1' + ipfsProvider + '/').replace('{id}', '' + tokenId);
+    const itemUrl = changeIpfsUrl(itemUri).replace('{id}', '' + tokenId);
     const itemData = await axios.get(itemUrl);
 
     const img = new Image();
-    img.src = itemData.data.image.replace(/ipfs:\/\/([a-zA-Z0-9]*)\//, 'https://$1' + ipfsProvider + '/');
+    img.src = changeIpfsUrl(itemData.data.image);
 
     setImage(img.src);
   }
@@ -105,8 +112,14 @@ export default function Home() {
   }
 
   async function setAllPathData(pathData, gameContract) {
+    window.scrollTo(0, 0);
     const currentPath = await _loadPathDescriptors(gameContract, pathData.pathType);
     setCurrentPath(currentPath);
+
+    const img = new Image();
+    img.src = changeIpfsUrl(currentPath.image);
+    console.log(img.src);
+    setCurrentPathImage(img.src);
 
     const nextPathTypes = pathData.nextPathTypes;
     const nextPaths = await Promise.all(nextPathTypes.map(async pathType => {
@@ -142,25 +155,26 @@ export default function Home() {
       </div>
       :
       <div className="flex-wrap w-full pt-2 px-10 content-center">
+        <div className="pb-6 w-full text-lg text-gray-300">Current path: <span className="font-extrabold">{currentPath.pathName}</span></div>
+        <img src={currentPathImage} alt='' className='rounded-lg' />
         { !isDead ?
           <div className="py-6 text-lg text-gray-300">{currentPath.pathDescription}</div>
           :
-          <div className="py-10 justify-left text-lg text-gray-300 font-medium">{currentPath.deathDescription}</div>
+          <div className="py-6 justify-left text-lg text-gray-300 font-medium">{currentPath.deathDescription}</div>
         }
-        <div className="pb-16 w-full text-lg text-gray-300">Current path: <span className="font-extrabold">{currentPath.pathName}</span></div>
         
         { isDead ? <div className="pb-10 justify-left text-lg text-gray-300 font-extrabold text-red-600">Game over!</div> : <div></div> }
         { hasWon ? <div className="pb-10 justify-left text-lg text-gray-300 font-extrabold text-purple-600">You won!</div> : <div></div> }
         { isDead || hasWon ?
-        <button type="button" onClick={startGame} className="p-4 font-extrabold text-gray-300 justify-center bg-gradient-to-tr from-gray-900 to-green-900 hover:from-gray-900 hover:to-green-800 rounded-md shadow-lg shadow-indigo-500/40 hover:shadow-none">
+        <button type="button" onClick={startGame} className="p-4 mb-10 font-extrabold text-gray-300 justify-center bg-gradient-to-tr from-gray-900 to-green-900 hover:from-gray-900 hover:to-green-800 rounded-md shadow-lg shadow-indigo-500/40 hover:shadow-none">
           {'>'} Restart Game
         </button>
         :
         <div>
-          <div className="pb-4 w-full text-lg text-gray-300">Here are the adjacent paths:</div>
+          <div className="py-4 w-full text-lg text-gray-300">Here are the adjacent paths:</div>
           <div className="w-full flex flex-col">
             <div className="flex flex-col items-center justify-center md:flex-row">
-              <div className="px-5 my-6 gap-4 sm:grid md:grid-cols-3 xl:grid-cols-3 3xl:flex flex-wrap justify-center">
+              <div className="px-5 mt-4 mb-10 gap-4 sm:grid md:grid-cols-3 xl:grid-cols-3 3xl:flex flex-wrap justify-center">
                 {nextPaths.map((path, i) => (
                   <button type="button" onClick={async () => {await choosePath(i);}} key={i} className="bg-gradient-to-tr from-gray-900 to-green-900 hover:from-gray-900 hover:to-green-800 rounded-md shadow-lg shadow-indigo-500/40 hover:shadow-none">
                     <div className="max-w-xs h-full text-white hover:text-black">

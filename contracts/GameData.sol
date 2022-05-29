@@ -113,7 +113,7 @@ contract GameData {
         );
 
         initialPath = pathTypeToData[PathType.CHASM];
-        pathUri = "ipfs://bafybeicifsc3qazoqsaged2jvl3yxx6vioba4dchccy2i5qu2jlkzz77du/{id}.json";
+        pathUri = "ipfs://bafybeia3hrdjiiotqsy5isksgcriemoiddqpal4phdp5zeygrzb6xwnqre/{id}.json";
     }
 
     function uri(uint256) public view returns (string memory) {
