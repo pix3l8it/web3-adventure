@@ -161,5 +161,61 @@ describe("Game", function () {
       }
       assert.isTrue(hasWon);
     });
+
+    it ("Player can open treasure with key", async function () {
+      await game.connect(account2).startGame();
+      let _itemIds = [gameItems.KEY(), gameItems.TREASURE()];
+      let _itemAmounts = [1, 1];
+      await gameItems.mintTokens(account2.address, _itemIds, _itemAmounts);
+
+      expect(await game.getBalanceOfKey(account2.address)).to.equal(1);
+      expect(await game.getBalanceOfTreasure(account2.address)).to.equal(1);
+
+      await game.connect(account2).openTreasureWithKey();
+      expect(await game.getBalanceOfKey(account2.address)).to.equal(0);
+      expect(await game.getBalanceOfTreasure(account2.address)).to.equal(0);
+      expect(await game.getBalanceOfGold(account2.address)).to.equal(10000);
+    });
+
+    it ("Player cannot open treasure without key", async function () {
+      await game.connect(account2).startGame();
+      let _itemIds = [gameItems.TREASURE()];
+      let _itemAmounts = [1];
+      await gameItems.mintTokens(account2.address, _itemIds, _itemAmounts);
+
+      expect(await game.getBalanceOfKey(account2.address)).to.equal(0);
+      expect(await game.getBalanceOfTreasure(account2.address)).to.equal(1);
+
+      await expect(game.connect(account2).openTreasureWithKey()).to.be.revertedWith("You have no Key to open your Treasure");
+    });
+
+    it ("Player cannot open treasure without treasure", async function () {
+      await game.connect(account2).startGame();
+      let _itemIds = [gameItems.KEY()];
+      let _itemAmounts = [1];
+      await gameItems.mintTokens(account2.address, _itemIds, _itemAmounts);
+
+      expect(await game.getBalanceOfKey(account2.address)).to.equal(1);
+      expect(await game.getBalanceOfTreasure(account2.address)).to.equal(0);
+
+      await expect(game.connect(account2).openTreasureWithKey()).to.be.revertedWith("You have no Treasure to open");
+    });
+
+    it ("Player cannot choose an invalid path", async function () {
+      await game.connect(account3).startGame();
+
+      await expect(game.connect(account3).choosePath(3)).to.be.revertedWith("You must select a valid path");
+      await expect(game.connect(account3).choosePath(100)).to.be.revertedWith("You must select a valid path");
+    });
+
+    it ("Player cannot choose a path when not in game", async function () {
+      await expect(game.connect(account3).choosePath(1)).to.be.revertedWith("not in game");
+    });
+
+    it ("Player cannot start a game when already in game", async function () {
+      await game.connect(account3).startGame();
+
+      await expect(game.connect(account3).startGame()).to.be.revertedWith("already in game");
+    });
   });
 });

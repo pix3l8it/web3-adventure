@@ -47,7 +47,9 @@ contract Game is ReentrancyGuard, GameData, ERC1155Holder {
         playerStates[msg.sender] = GameState.STARTED;
     }
 
-    function choosePath(uint choiceId) public payable nonReentrant {
+    function choosePath(uint choiceId) public payable nonReentrant inGame {
+        require(choiceId < PATHS_TO_CHOOSE, "You must select a valid path");
+
         _pathIds.increment();
         uint256 pathId = _pathIds.current();
         PathType[PATHS_TO_CHOOSE] memory playerPathTypes = playerCurrentPaths[msg.sender].nextPathTypes;
@@ -79,7 +81,7 @@ contract Game is ReentrancyGuard, GameData, ERC1155Holder {
             _itemAmounts[0] = gold;
             _itemAmounts[1] = key ? 1 : 0;
             _itemAmounts[2] = treasure ? 1 : 0;
-            gameItems.safeBatchTransferFrom(address(this), msg.sender, _itemIds, _itemAmounts, "0x0");
+            gameItems.mintTokens(msg.sender, _itemIds, _itemAmounts);
 
             if (pathType == PathType.PALACE) {
                 playerStates[msg.sender] = GameState.WON;
@@ -99,6 +101,23 @@ contract Game is ReentrancyGuard, GameData, ERC1155Holder {
         );
     }
 
+    function openTreasureWithKey() public payable nonReentrant {
+        require(gameItems.balanceOf(msg.sender,gameItems.TREASURE()) > 0, "You have no Treasure to open");
+        require(gameItems.balanceOf(msg.sender,gameItems.KEY()) > 0, "You have no Key to open your Treasure");
+
+        // Burn one Key and one Treasure
+        uint256[] memory _itemIds = new uint256[](2);
+        _itemIds[0] = gameItems.KEY();
+        _itemIds[1] = gameItems.TREASURE();
+        uint256[] memory _itemAmounts = new uint256[](2);
+        _itemAmounts[0] = 1;
+        _itemAmounts[1] = 1;
+        gameItems.burnTokens(msg.sender, _itemIds, _itemAmounts);
+
+        // Mint Gold to player
+        gameItems.mintToken(msg.sender, uint256(gameItems.GOLD()), uint256(10000));
+    }
+
     function fetchCurrentPath(address player) public view returns (PathData memory) {
         return playerCurrentPaths[player];
     }
@@ -114,6 +133,7 @@ contract Game is ReentrancyGuard, GameData, ERC1155Holder {
             }
         }
 
+        // Get player paths in order
         Path[] memory paths = new Path[](pathCount);
         for (uint i = 0; i < totalPathCount; i++) {
             if (idToPath[i + 1].player == player) {

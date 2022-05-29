@@ -88,7 +88,7 @@ contract GameData {
         );
         pathTypeToData[PathType.LOOSE_PLANKS] = PathData(
             PathType.LOOSE_PLANKS,
-            400, 500, 15, 10, 35,
+            400, 500, 70, 10, 35,
             [PathType.MUSKY_SMELL, PathType.MURMURING, PathType.PALACE]
         );
         pathTypeToData[PathType.FRIENDLY_RAT] = PathData(

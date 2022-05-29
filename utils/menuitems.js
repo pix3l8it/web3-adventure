@@ -8,6 +8,11 @@ const MenuItems = [
         label: 'History',
         url: "/history",
         active: false,
+    },
+    {
+        label: 'Treasure',
+        url: "/treasure",
+        active: false,
     }
 ];
   
